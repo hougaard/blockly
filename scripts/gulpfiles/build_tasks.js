@@ -146,6 +146,13 @@ const chunks = [
     exports: 'module$exports$Blockly$Dart',
     reexport: 'Blockly.Dart',
     reexportOnly: 'dartGenerator',
+  },
+  {
+    name: 'AL',
+    entry: 'generators/AL/all.js',
+    exports: 'module$exports$Blockly$AL',
+    reexport: 'Blockly.AL',
+    reexportOnly: 'alGenerator',
   }
 ];
 

@@ -13,11 +13,11 @@
 import * as goog from '../closure/goog/goog.js';
 goog.declareModuleId('Blockly.Generator');
 
-import type {Block} from './block.js';
+import type { Block } from './block.js';
 import * as common from './common.js';
-import {Names, NameType} from './names.js';
+import { Names, NameType } from './names.js';
 import * as deprecation from './utils/deprecation.js';
-import type {Workspace} from './workspace.js';
+import type { Workspace } from './workspace.js';
 
 
 /**
@@ -43,21 +43,21 @@ export class Generator {
    * Any instances of '%1' will be replaced by the block ID that failed.
    * E.g. `  checkTimeout(%1);\n`
    */
-  INFINITE_LOOP_TRAP: string|null = null;
+  INFINITE_LOOP_TRAP: string | null = null;
 
   /**
    * Arbitrary code to inject before every statement.
    * Any instances of '%1' will be replaced by the block ID of the statement.
    * E.g. `highlight(%1);\n`
    */
-  STATEMENT_PREFIX: string|null = null;
+  STATEMENT_PREFIX: string | null = null;
 
   /**
    * Arbitrary code to inject after every statement.
    * Any instances of '%1' will be replaced by the block ID of the statement.
    * E.g. `highlight(%1);\n`
    */
-  STATEMENT_SUFFIX: string|null = null;
+  STATEMENT_SUFFIX: string | null = null;
 
   /**
    * The method of indenting.  Defaults to two spaces, but language generators
@@ -80,19 +80,19 @@ export class Generator {
    * will cause blockToCode to emit a warning if the generator has not been
    * initialized. If this flag is untouched, it will have no effect.
    */
-  isInitialized: boolean|null = null;
+  isInitialized: boolean | null = null;
 
   /** Comma-separated list of reserved words. */
   protected RESERVED_WORDS_ = '';
 
   /** A dictionary of definitions to be printed before the code. */
-  protected definitions_: {[key: string]: string} = Object.create(null);
+  protected definitions_: { [key: string]: string } = Object.create(null);
 
   /**
    * A dictionary mapping desired function names in definitions_ to actual
    * function names (to avoid collisions with user functions).
    */
-  protected functionNames_: {[key: string]: string} = Object.create(null);
+  protected functionNames_: { [key: string]: string } = Object.create(null);
 
   /** A database of variable and procedure names. */
   protected nameDB_?: Names = undefined;
@@ -102,7 +102,7 @@ export class Generator {
     this.name_ = name;
 
     this.FUNCTION_NAME_PLACEHOLDER_REGEXP_ =
-        new RegExp(this.FUNCTION_NAME_PLACEHOLDER_, 'g');
+      new RegExp(this.FUNCTION_NAME_PLACEHOLDER_, 'g');
   }
 
   /**
@@ -115,7 +115,7 @@ export class Generator {
     if (!workspace) {
       // Backwards compatibility from before there could be multiple workspaces.
       console.warn(
-          'No workspace specified in workspaceToCode call.  Guessing.');
+        'No workspace specified in workspaceToCode call.  Guessing.');
       workspace = common.getMainWorkspace();
     }
     const code = [];
@@ -201,11 +201,11 @@ export class Generator {
    *     For value blocks, an array containing the generated code and an
    * operator order value.  Returns '' if block is null.
    */
-  blockToCode(block: Block|null, opt_thisOnly?: boolean): string
-      |[string, number] {
+  blockToCode(block: Block | null, opt_thisOnly?: boolean): string
+    | [string, number] {
     if (this.isInitialized === false) {
       console.warn(
-          'Generator init was not called before blockToCode was called.');
+        'Generator init was not called before blockToCode was called.');
     }
     if (!block) {
       return '';
@@ -222,8 +222,8 @@ export class Generator {
     const func = (this as any)[block.type];
     if (typeof func !== 'function') {
       throw Error(
-          'Language "' + this.name_ + '" does not know how to generate ' +
-          'code for block type "' + block.type + '".');
+        'Language "' + this.name_ + '" does not know how to generate ' +
+        'code for block type "' + block.type + '".');
     }
     // First argument to func.call is the value of 'this' in the generator.
     // Prior to 24 September 2013 'this' was the only way to access the block.
@@ -252,6 +252,13 @@ export class Generator {
     throw SyntaxError('Invalid code generated: ' + code);
   }
 
+  valueToType(block: Block, name: string, outerOrder: number): string {
+    if (isNaN(outerOrder)) {
+      throw TypeError('Expecting valid order from block: ' + block.type);
+    }
+    const targetType = block.getInputTargetBlockType(name);
+    return targetType;
+  }
   /**
    * Generate code representing the specified value input.
    *
@@ -284,7 +291,7 @@ export class Generator {
     const innerOrder = tuple[1];
     if (isNaN(innerOrder)) {
       throw TypeError(
-          'Expecting valid order from value block: ' + targetBlock.type);
+        'Expecting valid order from value block: ' + targetBlock.type);
     }
     if (!code) {
       return '';
@@ -296,7 +303,7 @@ export class Generator {
     const innerOrderClass = Math.floor(innerOrder);
     if (outerOrderClass <= innerOrderClass) {
       if (outerOrderClass === innerOrderClass &&
-          (outerOrderClass === 0 || outerOrderClass === 99)) {
+        (outerOrderClass === 0 || outerOrderClass === 99)) {
         // Don't generate parens around NONE-NONE and ATOMIC-ATOMIC pairs.
         // 0 is the atomic order, 99 is the none order.  No parentheses needed.
         // In all known languages multiple such code blocks are not order
@@ -309,7 +316,7 @@ export class Generator {
         // Check for special exceptions.
         for (let i = 0; i < this.ORDER_OVERRIDES.length; i++) {
           if (this.ORDER_OVERRIDES[i][0] === outerOrder &&
-              this.ORDER_OVERRIDES[i][1] === innerOrder) {
+            this.ORDER_OVERRIDES[i][1] === innerOrder) {
             parensNeeded = false;
             break;
           }
@@ -341,8 +348,8 @@ export class Generator {
     // Statement blocks must only return code.
     if (typeof code !== 'string') {
       throw TypeError(
-          'Expecting code from statement block: ' +
-          (targetBlock && targetBlock.type));
+        'Expecting code from statement block: ' +
+        (targetBlock && targetBlock.type));
     }
     if (code) {
       code = this.prefixLines((code), this.INDENT);
@@ -363,18 +370,18 @@ export class Generator {
   addLoopTrap(branch: string, block: Block): string {
     if (this.INFINITE_LOOP_TRAP) {
       branch = this.prefixLines(
-                   this.injectId(this.INFINITE_LOOP_TRAP, block), this.INDENT) +
-          branch;
+        this.injectId(this.INFINITE_LOOP_TRAP, block), this.INDENT) +
+        branch;
     }
     if (this.STATEMENT_SUFFIX && !block.suppressPrefixSuffix) {
       branch = this.prefixLines(
-                   this.injectId(this.STATEMENT_SUFFIX, block), this.INDENT) +
-          branch;
+        this.injectId(this.STATEMENT_SUFFIX, block), this.INDENT) +
+        branch;
     }
     if (this.STATEMENT_PREFIX && !block.suppressPrefixSuffix) {
       branch = branch +
-          this.prefixLines(
-              this.injectId(this.STATEMENT_PREFIX, block), this.INDENT);
+        this.prefixLines(
+          this.injectId(this.STATEMENT_PREFIX, block), this.INDENT);
     }
     return branch;
   }
@@ -422,17 +429,17 @@ export class Generator {
    * @returns The actual name of the new function.  This may differ from
    *     desiredName if the former has already been taken by the user.
    */
-  protected provideFunction_(desiredName: string, code: string[]|string):
-      string {
+  protected provideFunction_(desiredName: string, code: string[] | string):
+    string {
     if (!this.definitions_[desiredName]) {
       const functionName =
-          this.nameDB_!.getDistinctName(desiredName, NameType.PROCEDURE);
+        this.nameDB_!.getDistinctName(desiredName, NameType.PROCEDURE);
       this.functionNames_[desiredName] = functionName;
       if (Array.isArray(code)) {
         code = code.join('\n');
       }
       let codeText = code.trim().replace(
-          this.FUNCTION_NAME_PLACEHOLDER_REGEXP_, functionName);
+        this.FUNCTION_NAME_PLACEHOLDER_REGEXP_, functionName);
       // Change all '  ' indents into the desired indent.
       // To avoid an infinite loop of replacements, change all indents to '\0'
       // character first, then replace them all with the indent.
@@ -478,7 +485,7 @@ export class Generator {
    * @returns Code with comments and subsequent blocks added.
    */
   protected scrub_(_block: Block, code: string, _opt_thisOnly?: boolean):
-      string {
+    string {
     // Optionally override
     return code;
   }
@@ -525,12 +532,12 @@ Object.defineProperties(Generator.prototype, {
   variableDB_: ({
     /** @returns Name database. */
     get(this: Generator): Names |
-        undefined {
-          deprecation.warn('variableDB_', 'version 9', 'version 10', 'nameDB_');
-          return this.nameDB_;
-        },
+      undefined {
+      deprecation.warn('variableDB_', 'version 9', 'version 10', 'nameDB_');
+      return this.nameDB_;
+    },
     /** @param nameDb New name database. */
-    set(this: Generator, nameDb: Names|undefined) {
+    set(this: Generator, nameDb: Names | undefined) {
       deprecation.warn('variableDB_', 'version 9', 'version 10', 'nameDB_');
       this.nameDB_ = nameDb;
     },
